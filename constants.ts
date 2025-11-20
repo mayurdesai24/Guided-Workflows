@@ -151,7 +151,7 @@ export const INITIAL_WORKFLOWS: Workflow[] = [
           {
             id: 'step-3-1-1',
             name: 'Review ETL Pipeline Health',
-            owners: ['Priya Nair'],
+            owners: ['Alex Rivera'],
             requiresNotes: true,
             reports: [
               { id: 'rep-6', name: 'ETL Job Health & Latency', tool: 'Tableau' },
