@@ -11,7 +11,7 @@ export const INITIAL_WORKFLOWS: Workflow[] = [
     activeRunId: 'run-101', 
     lastRunDate: 'Feb 2025',
     metadata: {
-      objective: 'Ensure accurate monthly financial reporting',
+      objective: 'Comprehensive financial close process including reconciliations and final reporting',
       cadence: 'Monthly',
       category: 'Finance > Close & Consolidation',
       owner: 'Maria Gomez',
@@ -19,65 +19,92 @@ export const INITIAL_WORKFLOWS: Workflow[] = [
     sections: [
       {
         id: 'sec-1-1',
-        title: 'Pre-Close Checks',
+        title: 'System & Data Prep',
         steps: [
           {
             id: 'step-1-1-1',
-            name: 'Validate Source Data Completeness',
-            owners: ['Alex Rivera', 'Tech Support'],
+            name: 'Verify ERP Data Loads',
+            owners: ['Alex Rivera', 'IT Ops'],
             requiresNotes: true,
             reports: [
-              { id: 'rep-1', name: 'Finance Data Completeness Check', tool: 'External' }
+              { id: 'rep-1a', name: 'ERP Load Status Dashboard', tool: 'External' },
+              { id: 'rep-1b', name: 'Source System Row Counts', tool: 'Tableau' }
             ],
-            guidance: 'Ensure all ERP extracts have been loaded for the period.',
-            kpiTags: ['Data Integrity', 'Completeness'],
+            guidance: 'Confirm that all sub-ledger feeds from SAP and Oracle have completed successfully.',
+            kpiTags: ['Data Completeness', 'System Health'],
             checklist: [
-              { id: 'cl-1', label: 'General Ledger loaded', checked: false },
-              { id: 'cl-2', label: 'Sub-ledger reconciliation done', checked: false }
+              { id: 'cl-1-1', label: 'GL Interface Complete', checked: false },
+              { id: 'cl-1-2', label: 'Sub-ledgers Posted', checked: false }
             ],
             filterPresets: [{ key: 'Period', value: 'Current Month', type: 'Date / Period' }]
+          },
+          {
+            id: 'step-1-1-2',
+            name: 'Execute Currency Revaluation',
+            owners: ['Alex Rivera'],
+            requiresNotes: false,
+            reports: [
+               { id: 'rep-1c', name: 'FX Rates Master', tool: 'External' }
+            ],
+            guidance: 'Ensure latest month-end exchange rates are applied before consolidation.',
+            kpiTags: ['FX Impact'],
+            checklist: [{ id: 'cl-1-3', label: 'Rates Validated', checked: false }],
+            filterPresets: []
           }
         ]
       },
       {
         id: 'sec-1-2',
-        title: 'P&L Review',
+        title: 'Reconciliations',
         steps: [
           {
-            id: 'step-1-2-1',
-            name: 'Review Monthly Revenue Variance',
-            owners: ['Alex Rivera'],
-            requiresNotes: true,
-            reports: [
-              { id: 'rep-2', name: 'Monthly Revenue Variance', tool: 'Qlik' }
-            ],
-            guidance: 'Check for any variance > 5% against forecast.',
-            kpiTags: ['Revenue', 'Variance Analysis'],
-            checklist: [
-              { id: 'cl-3', label: 'Variance explained', checked: false }
-            ],
-            filterPresets: [{ key: 'Scenario', value: 'Actual vs Forecast', type: 'Scenario' }]
+             id: 'step-1-2-1',
+             name: 'Bank Reconciliation',
+             owners: ['Maria Gomez', 'Alex Rivera'],
+             requiresNotes: true,
+             reports: [{ id: 'rep-2a', name: 'Cash Position & Bank Rec', tool: 'PowerBI' }],
+             guidance: 'Match all cash entries against bank statements. Investigate unreconciled items > $1k.',
+             kpiTags: ['Cash Flow', 'Audit'],
+             checklist: [
+               { id: 'cl-2-1', label: 'All accounts matched', checked: false },
+               { id: 'cl-2-2', label: 'Sign-off attached', checked: false }
+             ],
+             filterPresets: []
+          },
+          {
+             id: 'step-1-2-2',
+             name: 'Intercompany Matching',
+             owners: ['Alex Rivera'],
+             requiresNotes: true,
+             reports: [{ id: 'rep-2b', name: 'Intercompany Mismatch Report', tool: 'Qlik' }],
+             guidance: 'Resolve any IC mismatches between entities before elimination runs.',
+             kpiTags: ['Consolidation'],
+             checklist: [{ id: 'cl-2-3', label: 'Mismatches < 1%', checked: false }],
+             filterPresets: []
           }
         ]
       },
       {
         id: 'sec-1-3',
-        title: 'Balance Sheet Review',
+        title: 'Financial Review',
         steps: [
            {
             id: 'step-1-3-1',
-            name: 'Validate AR Aging',
+            name: 'P&L Variance Analysis',
             owners: ['Alex Rivera'],
-            requiresNotes: false,
+            requiresNotes: true,
             reports: [
-              { id: 'rep-3', name: 'AR Aging by Customer', tool: 'Tableau' }
+              { id: 'rep-3a', name: 'Consolidated P&L', tool: 'Tableau' },
+              { id: 'rep-3b', name: 'Revenue by Region', tool: 'PowerBI' }
             ],
-            guidance: 'Review overdue accounts > 90 days.',
-            kpiTags: ['Accounts Receivable', 'Risk'],
+            guidance: 'Analyze variance vs Forecast. Provide commentary for any line item deviating > 5%.',
+            kpiTags: ['EBITDA', 'Revenue'],
             checklist: [
-              { id: 'cl-4', label: 'High risk accounts flagged', checked: false }
+              { id: 'cl-3-1', label: 'Review Revenue variance explanations', checked: false },
+              { id: 'cl-3-2', label: 'Validate OpEx accruals', checked: false },
+              { id: 'cl-3-3', label: 'Confirm Gross Margin trends', checked: false }
             ],
-            filterPresets: []
+            filterPresets: [{ key: 'Scenario', value: 'Actual vs Forecast', type: 'Scenario' }]
            }
         ]
       }
@@ -256,7 +283,7 @@ export const INITIAL_WORKFLOWS: Workflow[] = [
 
 // --- Mock Runs ---
 
-// Workflow 1 is "In Progress" (Last Step: 2 completed out of 3)
+// Workflow 1 is "In Progress" (Updated Month End Close)
 export const INITIAL_RUNS: Run[] = [
   {
     id: 'run-101',
@@ -264,41 +291,66 @@ export const INITIAL_RUNS: Run[] = [
     status: 'In Progress',
     executedBy: 'Alex Rivera',
     startTime: '2025-02-24T08:00:00Z',
-    currentSectionIndex: 2, // Balance Sheet Review (Section 3)
-    currentStepIndex: 0, // Validate AR Aging (Step 1 of Section 3)
-    completedSteps: 2, // Completed Pre-Close Checks (1) + P&L Review (1)
-    totalSteps: 3, // Total steps
+    currentSectionIndex: 2, // Financial Review
+    currentStepIndex: 0, // P&L Variance Analysis
+    completedSteps: 4, // 2 prep + 2 reconciliations
+    totalSteps: 5,
     comments: [
-      { id: 'c1', userId: 'user1', userName: 'Maria Gomez', text: 'Alex, please double check the SAP extracts this month.', timestamp: '2025-02-24T08:15:00Z' },
-      { id: 'c2', userId: 'user2', userName: 'Alex Rivera', text: 'Will do. Source data looks cleaner than last month.', timestamp: '2025-02-24T08:20:00Z' }
+      { id: 'c1', userId: 'user1', userName: 'Maria Gomez', text: 'Alex, ensure FX rates are updated before running revaluation.', timestamp: '2025-02-24T08:10:00Z' }
     ],
     history: [
        {
         stepId: 'step-1-1-1',
-        stepName: 'Validate Source Data Completeness',
-        sectionTitle: 'Pre-Close Checks',
-        completedAt: '2025-02-24T09:30:00Z',
+        stepName: 'Verify ERP Data Loads',
+        sectionTitle: 'System & Data Prep',
+        completedAt: '2025-02-24T09:00:00Z',
         completedBy: 'Alex Rivera',
-        notes: 'Confirmed that all ERP source extracts from SAP and Oracle have successfully loaded. Row counts match the control totals from last night. Data is ready for P&L aggregation.',
+        notes: 'All source systems (SAP, Oracle, Netsuite) loaded successfully. Row counts validated.',
         checklistState: [
-          {id: 'cl-1', label: 'General Ledger loaded', checked: true},
-          {id: 'cl-2', label: 'Sub-ledger reconciliation done', checked: true}
+          {id: 'cl-1-1', label: 'GL Interface Complete', checked: true},
+          {id: 'cl-1-2', label: 'Sub-ledgers Posted', checked: true}
         ],
         filterValuesUsed: [{ key: 'Period', value: 'Current Month', type: 'Date / Period' }],
-        reportsSnapshot: [{ id: 'rep-1', name: 'Finance Data Completeness Check', tool: 'External' }]
+        reportsSnapshot: [
+            { id: 'rep-1a', name: 'ERP Load Status Dashboard', tool: 'External' },
+            { id: 'rep-1b', name: 'Source System Row Counts', tool: 'Tableau' }
+        ]
+       },
+       {
+        stepId: 'step-1-1-2',
+        stepName: 'Execute Currency Revaluation',
+        sectionTitle: 'System & Data Prep',
+        completedAt: '2025-02-24T09:45:00Z',
+        completedBy: 'Alex Rivera',
+        notes: 'FX rates for GBP, EUR, and JPY updated. Revaluation process completed without errors.',
+        checklistState: [{ id: 'cl-1-3', label: 'Rates Validated', checked: true }],
+        filterValuesUsed: [],
+        reportsSnapshot: [{ id: 'rep-1c', name: 'FX Rates Master', tool: 'External' }]
        },
        {
         stepId: 'step-1-2-1',
-        stepName: 'Review Monthly Revenue Variance',
-        sectionTitle: 'P&L Review',
-        completedAt: '2025-02-24T10:15:00Z',
-        completedBy: 'Alex Rivera',
-        notes: 'Revenue is within 2% variance. No major anomalies found in top-line numbers.',
+        stepName: 'Bank Reconciliation',
+        sectionTitle: 'Reconciliations',
+        completedAt: '2025-02-24T11:15:00Z',
+        completedBy: 'Maria Gomez',
+        notes: 'All major accounts reconciled. One small variance ($45) in the operating account, flagged for adjustment next month.',
         checklistState: [
-          {id: 'cl-3', label: 'Variance explained', checked: true}
+           { id: 'cl-2-1', label: 'All accounts matched', checked: true },
+           { id: 'cl-2-2', label: 'Sign-off attached', checked: true }
         ],
-        filterValuesUsed: [{ key: 'Scenario', value: 'Actual vs Forecast', type: 'Scenario' }],
-        reportsSnapshot: [{ id: 'rep-2', name: 'Monthly Revenue Variance', tool: 'Qlik' }]
+        filterValuesUsed: [],
+        reportsSnapshot: [{ id: 'rep-2a', name: 'Cash Position & Bank Rec', tool: 'PowerBI' }]
+       },
+       {
+        stepId: 'step-1-2-2',
+        stepName: 'Intercompany Matching',
+        sectionTitle: 'Reconciliations',
+        completedAt: '2025-02-24T13:30:00Z',
+        completedBy: 'Alex Rivera',
+        notes: 'Intercompany mismatches resolved. Eliminations are ready for the final consolidation run.',
+        checklistState: [{ id: 'cl-2-3', label: 'Mismatches < 1%', checked: true }],
+        filterValuesUsed: [],
+        reportsSnapshot: [{ id: 'rep-2b', name: 'Intercompany Mismatch Report', tool: 'Qlik' }]
        }
     ]
   },
