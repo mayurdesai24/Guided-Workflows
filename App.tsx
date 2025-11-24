@@ -33,7 +33,9 @@ const App: React.FC = () => {
       completedSteps: 0,
       totalSteps: wf.sections.reduce((acc, s) => acc + s.steps.length, 0),
       history: [],
-      comments: []
+      comments: [],
+      totalDuration: 0,
+      timeSpentOnCurrentStep: 0
     };
 
     setRuns([newRun, ...runs]);

@@ -1,10 +1,9 @@
-
-
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Play, Plus, Activity, BarChart2, History, MoreHorizontal, Calendar, User, Layers, Loader2, Trash2, Clock, ChevronLeft, ChevronRight, CheckCircle2, MessageSquare } from 'lucide-react';
+import { Play, Plus, Activity, BarChart2, History, MoreHorizontal, Calendar, User, Layers, Loader2, Trash2, Clock, ChevronLeft, ChevronRight, CheckCircle2, MessageSquare, Timer } from 'lucide-react';
 import { Workflow, Run } from '../types';
 import { ChatPanel } from '../components/ChatPanel';
+import { formatDuration } from '../constants';
 
 interface HomeProps {
   workflows: Workflow[];
@@ -14,6 +13,36 @@ interface HomeProps {
   layoutMode: 'modern' | 'classic';
   onAddComment: (runId: string, text: string) => void;
 }
+
+const WorkflowDescription = ({ text }: { text: string }) => {
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+
+  useEffect(() => {
+    const checkTruncation = () => {
+      const element = textRef.current;
+      if (element) {
+        // Check if scrollHeight (full content) is greater than clientHeight (visible area)
+        // Adding a small threshold (1px) handles potential sub-pixel rendering differences
+        setIsTruncated(element.scrollHeight > element.clientHeight + 1);
+      }
+    };
+
+    checkTruncation();
+    window.addEventListener('resize', checkTruncation);
+    return () => window.removeEventListener('resize', checkTruncation);
+  }, [text]);
+
+  return (
+    <p 
+      ref={textRef} 
+      className="text-sm text-slate-500 line-clamp-2 mb-6" 
+      title={isTruncated ? text : undefined}
+    >
+      {text}
+    </p>
+  );
+};
 
 export const Home: React.FC<HomeProps> = ({ workflows, runs, onCreateRun, onDeleteWorkflow, layoutMode, onAddComment }) => {
   const navigate = useNavigate();
@@ -199,6 +228,7 @@ export const Home: React.FC<HomeProps> = ({ workflows, runs, onCreateRun, onDele
               }
 
               const activeRunComments = activeRun?.comments || [];
+              const timeSpentDisplay = activeRun ? formatDuration((activeRun.totalDuration || 0) + (activeRun.timeSpentOnCurrentStep || 0)) : null;
 
               return (
                 <div 
@@ -244,13 +274,22 @@ export const Home: React.FC<HomeProps> = ({ workflows, runs, onCreateRun, onDele
 
                     <h3 className="text-lg font-bold text-slate-900 mb-1 leading-tight group-hover:text-indigo-600 transition-colors">{wf.name}</h3>
                     <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">{wf.metadata.category}</p>
-                    <p className="text-sm text-slate-500 line-clamp-2 mb-6 flex-1">{wf.metadata.objective}</p>
+                    
+                    {/* Smart Truncated Description */}
+                    <WorkflowDescription text={wf.metadata.objective} />
 
                     {/* Progress Section */}
                     {isActive && activeRun && (
                        <div className="mb-5 bg-indigo-50/50 rounded-xl p-3 border border-indigo-100">
                           <div className="flex justify-between text-xs font-semibold text-indigo-900 mb-1.5">
-                            <span>Progress</span>
+                            <div className="flex items-center gap-2">
+                               <span>Progress</span>
+                               {timeSpentDisplay && (
+                                <span className="flex items-center gap-1 font-normal opacity-70">
+                                    <Timer className="w-3 h-3" /> {timeSpentDisplay}
+                                </span>
+                               )}
+                            </div>
                             <span>{progress}%</span>
                           </div>
                           <div className="w-full bg-white rounded-full h-1.5 border border-indigo-100/50 overflow-hidden">

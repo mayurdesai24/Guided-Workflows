@@ -1,6 +1,17 @@
 
 import { Workflow, Run } from './types';
 
+export const formatDuration = (ms: number): string => {
+  if (ms < 1000) return '0s';
+  const seconds = Math.floor((ms / 1000) % 60);
+  const minutes = Math.floor((ms / (1000 * 60)) % 60);
+  const hours = Math.floor((ms / (1000 * 60 * 60)));
+
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+};
+
 // --- Mock Workflows ---
 
 export const INITIAL_WORKFLOWS: Workflow[] = [
@@ -11,7 +22,7 @@ export const INITIAL_WORKFLOWS: Workflow[] = [
     activeRunId: 'run-101', 
     lastRunDate: 'Feb 2025',
     metadata: {
-      objective: 'Comprehensive financial close process including reconciliations and final reporting',
+      objective: 'A comprehensive financial close process designed to ensure accuracy and compliance across all global entities. This workflow guides the finance team through critical steps including sub-ledger verification, intercompany reconciliations, currency revaluation, and final consolidated reporting. It ensures that all GL entries are posted, variances are analyzed against forecasts, and regulatory requirements are met before the books are officially closed for the period.',
       cadence: 'Monthly',
       category: 'Finance > Close & Consolidation',
       owner: 'Maria Gomez',
@@ -117,7 +128,7 @@ export const INITIAL_WORKFLOWS: Workflow[] = [
     activeRunId: 'run-202',
     lastRunDate: 'Yesterday',
     metadata: {
-      objective: 'Weekly sales pipeline assessment',
+      objective: 'A structured weekly assessment of the global sales pipeline to drive forecast accuracy and revenue predictability. This process involves reviewing open opportunities in CRM, identifying stalled deals in the negotiation phase, and validating commit numbers with regional VPs. The goal is to ensure data hygiene, accelerate deal velocity, and provide executive leadership with a reliable 30-day forecast.',
       cadence: 'Weekly',
       category: 'Sales > Pipeline',
       owner: 'Alex Rivera',
@@ -165,7 +176,7 @@ export const INITIAL_WORKFLOWS: Workflow[] = [
     status: 'Completed', 
     lastRunDate: '3 days ago',
     metadata: {
-      objective: 'Identify and escalate operational risks',
+      objective: 'A proactive risk management framework focused on identifying, assessing, and mitigating operational anomalies in real-time. This workflow monitors critical data pipelines for latency and quality issues, tracks Key Risk Indicators (KRIs) for deviations, and formalizes the incident logging process. It empowers the risk committee to respond swiftly to control failures and system outages, ensuring business continuity and compliance with internal governance standards.',
       cadence: 'Weekly',
       category: 'Risk & Compliance',
       owner: 'Priya Nair',
@@ -295,6 +306,8 @@ export const INITIAL_RUNS: Run[] = [
     currentStepIndex: 0, // P&L Variance Analysis
     completedSteps: 4, // 2 prep + 2 reconciliations
     totalSteps: 5,
+    totalDuration: 10800000, // 3 hours in ms (approx)
+    timeSpentOnCurrentStep: 450000, // 7.5 mins so far
     comments: [
       { id: 'c1', userId: 'user1', userName: 'Maria Gomez', text: 'Alex, ensure FX rates are updated before running revaluation.', timestamp: '2025-02-24T08:10:00Z' }
     ],
@@ -314,7 +327,8 @@ export const INITIAL_RUNS: Run[] = [
         reportsSnapshot: [
             { id: 'rep-1a', name: 'ERP Load Status Dashboard', tool: 'External' },
             { id: 'rep-1b', name: 'Source System Row Counts', tool: 'Tableau' }
-        ]
+        ],
+        duration: 3600000 // 1 hour
        },
        {
         stepId: 'step-1-1-2',
@@ -325,7 +339,8 @@ export const INITIAL_RUNS: Run[] = [
         notes: 'FX rates for GBP, EUR, and JPY updated. Revaluation process completed without errors.',
         checklistState: [{ id: 'cl-1-3', label: 'Rates Validated', checked: true }],
         filterValuesUsed: [],
-        reportsSnapshot: [{ id: 'rep-1c', name: 'FX Rates Master', tool: 'External' }]
+        reportsSnapshot: [{ id: 'rep-1c', name: 'FX Rates Master', tool: 'External' }],
+        duration: 2700000 // 45 mins
        },
        {
         stepId: 'step-1-2-1',
@@ -339,7 +354,8 @@ export const INITIAL_RUNS: Run[] = [
            { id: 'cl-2-2', label: 'Sign-off attached', checked: true }
         ],
         filterValuesUsed: [],
-        reportsSnapshot: [{ id: 'rep-2a', name: 'Cash Position & Bank Rec', tool: 'PowerBI' }]
+        reportsSnapshot: [{ id: 'rep-2a', name: 'Cash Position & Bank Rec', tool: 'PowerBI' }],
+        duration: 3600000 // 1 hour (gap included in timestamps but duration tracks active time)
        },
        {
         stepId: 'step-1-2-2',
@@ -350,7 +366,8 @@ export const INITIAL_RUNS: Run[] = [
         notes: 'Intercompany mismatches resolved. Eliminations are ready for the final consolidation run.',
         checklistState: [{ id: 'cl-2-3', label: 'Mismatches < 1%', checked: true }],
         filterValuesUsed: [],
-        reportsSnapshot: [{ id: 'rep-2b', name: 'Intercompany Mismatch Report', tool: 'Qlik' }]
+        reportsSnapshot: [{ id: 'rep-2b', name: 'Intercompany Mismatch Report', tool: 'Qlik' }],
+        duration: 900000 // 15 mins active
        }
     ]
   },
@@ -365,6 +382,8 @@ export const INITIAL_RUNS: Run[] = [
     currentStepIndex: 0, // Validate 30-Day Forecast
     completedSteps: 1,
     totalSteps: 2,
+    totalDuration: 1200000, // 20 mins
+    timeSpentOnCurrentStep: 0,
     comments: [],
     history: [
        {
@@ -378,7 +397,8 @@ export const INITIAL_RUNS: Run[] = [
           {id: 'cl-5', label: 'Stalled deals identified', checked: true},
         ],
         filterValuesUsed: [{ key: 'Region', value: 'Global', type: 'Region / Entity' }],
-        reportsSnapshot: [{ id: 'rep-4', name: 'Sales Pipeline by Stage', tool: 'PowerBI' }]
+        reportsSnapshot: [{ id: 'rep-4', name: 'Sales Pipeline by Stage', tool: 'PowerBI' }],
+        duration: 1200000 // 20 mins
        }
     ]
   },
@@ -394,6 +414,8 @@ export const INITIAL_RUNS: Run[] = [
     currentStepIndex: 0,
     completedSteps: 2,
     totalSteps: 2,
+    totalDuration: 2700000, // 45 mins
+    timeSpentOnCurrentStep: 0,
     comments: [
       { id: 'c3', userId: 'user3', userName: 'Sarah Chen', text: 'I noticed the pipeline is a bit weak in EMEA this week.', timestamp: '2025-02-17T10:05:00Z' },
       { id: 'c4', userId: 'user2', userName: 'Alex Rivera', text: 'Agreed, looking into the legal hold-ups now.', timestamp: '2025-02-17T10:10:00Z' }
@@ -409,7 +431,8 @@ export const INITIAL_RUNS: Run[] = [
         notes: 'Investigated pipeline stall. Found 3 key opportunities in EMEA > 45 days negotiation. Notes from Salesforce indicate awaiting legal approval.',
         checklistState: [{id: 'cl-5', label: 'Stalled deals identified', checked: true}],
         filterValuesUsed: [{ key: 'Region', value: 'Global', type: 'Region / Entity' }],
-        reportsSnapshot: [{ id: 'rep-4', name: 'Sales Pipeline by Stage', tool: 'PowerBI' }]
+        reportsSnapshot: [{ id: 'rep-4', name: 'Sales Pipeline by Stage', tool: 'PowerBI' }],
+        duration: 1200000 // 20 mins
       },
       {
         stepId: 'step-2-2-1',
@@ -420,7 +443,8 @@ export const INITIAL_RUNS: Run[] = [
         notes: 'Due to the legal delays identified in the previous step, I removed the $150k from this month\'s commit. Forecast adjusted down by 5%. Regional VP aligned.',
         checklistState: [{id: 'cl-6', label: 'Forecast submitted', checked: true}],
         filterValuesUsed: [],
-        reportsSnapshot: [{ id: 'rep-5', name: '30-Day Sales Forecast Detail', tool: 'External' }]
+        reportsSnapshot: [{ id: 'rep-5', name: '30-Day Sales Forecast Detail', tool: 'External' }],
+        duration: 1500000 // 25 mins
       }
     ]
   },
@@ -436,6 +460,8 @@ export const INITIAL_RUNS: Run[] = [
     currentStepIndex: 1,
     completedSteps: 7,
     totalSteps: 7,
+    totalDuration: 4500000, // 75 mins
+    timeSpentOnCurrentStep: 0,
     comments: [
         { id: 'c5', userId: 'user4', userName: 'Priya Nair', text: 'Starting the risk review. Seeing some ETL latency alerts.', timestamp: '2025-02-21T14:02:00Z' },
         { id: 'c6', userId: 'user5', userName: 'IT Ops', text: 'We are aware of the latency. Job #445 is retrying. Should be clear in 10 mins.', timestamp: '2025-02-21T14:05:00Z' },
@@ -458,7 +484,8 @@ export const INITIAL_RUNS: Run[] = [
         reportsSnapshot: [
            { id: 'rep-6', name: 'ETL Job Health & Latency', tool: 'Tableau' },
            { id: 'rep-7', name: 'ETL Error Log Summary', tool: 'External' }
-        ]
+        ],
+        duration: 600000 // 10m
       },
       {
         stepId: 'step-3-1-2',
@@ -469,7 +496,8 @@ export const INITIAL_RUNS: Run[] = [
         notes: 'Found 500 unexpected null values in the `customer_id` column in the staging transaction table. Flagging for investigation.',
         checklistState: [],
         filterValuesUsed: [],
-        reportsSnapshot: [{ id: 'rep-8', name: 'Data Quality Exceptions Summary', tool: 'Qlik' }]
+        reportsSnapshot: [{ id: 'rep-8', name: 'Data Quality Exceptions Summary', tool: 'Qlik' }],
+        duration: 600000 // 10m
       },
       {
         stepId: 'step-3-2-1',
@@ -480,7 +508,8 @@ export const INITIAL_RUNS: Run[] = [
         notes: 'Risk Exposure KPI spiked to $2M. This correlates with the null customer IDs found in the previous step (defaulting to High Risk category).',
         checklistState: [],
         filterValuesUsed: [],
-        reportsSnapshot: [{ id: 'rep-9', name: 'Operational Risk KPIs Overview', tool: 'PowerBI' }]
+        reportsSnapshot: [{ id: 'rep-9', name: 'Operational Risk KPIs Overview', tool: 'PowerBI' }],
+        duration: 600000 // 10m
       },
       {
         stepId: 'step-3-2-2',
@@ -494,7 +523,8 @@ export const INITIAL_RUNS: Run[] = [
         reportsSnapshot: [
            { id: 'rep-10', name: 'Transaction Anomaly Detection', tool: 'External' },
            { id: 'rep-11', name: 'Transaction Trend Outliers', tool: 'Qlik' }
-        ]
+        ],
+        duration: 900000 // 15m
       },
       {
         stepId: 'step-3-2-3',
@@ -505,7 +535,8 @@ export const INITIAL_RUNS: Run[] = [
         notes: 'One SOX control (Data Completeness Check) formally failed due to the nulls. Must escalate per policy.',
         checklistState: [{ id: 'cl-10', label: 'Impact assessment complete', checked: true }],
         filterValuesUsed: [],
-        reportsSnapshot: [{ id: 'rep-12', name: 'Control Failure Summary', tool: 'Tableau' }]
+        reportsSnapshot: [{ id: 'rep-12', name: 'Control Failure Summary', tool: 'Tableau' }],
+        duration: 600000 // 10m
       },
       {
         stepId: 'step-3-3-1',
@@ -516,7 +547,8 @@ export const INITIAL_RUNS: Run[] = [
         notes: 'Logged Incident #INC-998 regarding the Control Failure. Noted that financial impact is $0 (data error only).',
         checklistState: [{ id: 'cl-11', label: 'Incidents logged', checked: true }],
         filterValuesUsed: [],
-        reportsSnapshot: [{ id: 'rep-13', name: 'Risk Incident Register', tool: 'External' }]
+        reportsSnapshot: [{ id: 'rep-13', name: 'Risk Incident Register', tool: 'External' }],
+        duration: 600000 // 10m
       },
       {
         stepId: 'step-3-3-2',
@@ -527,7 +559,8 @@ export const INITIAL_RUNS: Run[] = [
         notes: 'Summary report generated and emailed to Risk Committee with the root cause analysis attached.',
         checklistState: [{ id: 'cl-12', label: 'Summary approved', checked: true }],
         filterValuesUsed: [],
-        reportsSnapshot: [{ id: 'rep-14', name: 'Risk Incident Summary & Escalation', tool: 'Qlik' }]
+        reportsSnapshot: [{ id: 'rep-14', name: 'Risk Incident Summary & Escalation', tool: 'Qlik' }],
+        duration: 600000 // 10m
       }
     ]
   },
@@ -542,13 +575,15 @@ export const INITIAL_RUNS: Run[] = [
     currentStepIndex: 0, 
     completedSteps: 2, 
     totalSteps: 2, 
+    totalDuration: 4200000,
+    timeSpentOnCurrentStep: 0,
     comments: [
       { id: 'c8', userId: 'user2', userName: 'Alex Rivera', text: 'Smooth run this week. All opportunities are up to date.', timestamp: '2025-02-10T10:10:00Z' }
     ], 
     history: [], 
     outcome: 'Forecast confirmed.' 
   },
-  { id: 'run-53', workflowId: 'wf-2', status: 'Completed', executedBy: 'Alex Rivera', startTime: '2025-02-03T09:00:00Z', endTime: '2025-02-03T09:45:00Z', currentSectionIndex: 1, currentStepIndex: 0, completedSteps: 2, totalSteps: 2, comments: [], history: [], outcome: 'Forecast confirmed.' },
-  { id: 'run-52', workflowId: 'wf-2', status: 'Completed', executedBy: 'Alex Rivera', startTime: '2025-01-27T10:00:00Z', endTime: '2025-01-27T10:50:00Z', currentSectionIndex: 1, currentStepIndex: 0, completedSteps: 2, totalSteps: 2, comments: [], history: [], outcome: 'Forecast confirmed.' },
-  { id: 'run-51', workflowId: 'wf-2', status: 'Completed', executedBy: 'Alex Rivera', startTime: '2025-01-20T10:00:00Z', endTime: '2025-01-20T11:00:00Z', currentSectionIndex: 1, currentStepIndex: 0, completedSteps: 2, totalSteps: 2, comments: [], history: [], outcome: 'Forecast confirmed.' },
+  { id: 'run-53', workflowId: 'wf-2', status: 'Completed', executedBy: 'Alex Rivera', startTime: '2025-02-03T09:00:00Z', endTime: '2025-02-03T09:45:00Z', currentSectionIndex: 1, currentStepIndex: 0, completedSteps: 2, totalSteps: 2, totalDuration: 2700000, timeSpentOnCurrentStep: 0, comments: [], history: [], outcome: 'Forecast confirmed.' },
+  { id: 'run-52', workflowId: 'wf-2', status: 'Completed', executedBy: 'Alex Rivera', startTime: '2025-01-27T10:00:00Z', endTime: '2025-01-27T10:50:00Z', currentSectionIndex: 1, currentStepIndex: 0, completedSteps: 2, totalSteps: 2, totalDuration: 3000000, timeSpentOnCurrentStep: 0, comments: [], history: [], outcome: 'Forecast confirmed.' },
+  { id: 'run-51', workflowId: 'wf-2', status: 'Completed', executedBy: 'Alex Rivera', startTime: '2025-01-20T10:00:00Z', endTime: '2025-01-20T11:00:00Z', currentSectionIndex: 1, currentStepIndex: 0, completedSteps: 2, totalSteps: 2, totalDuration: 3600000, timeSpentOnCurrentStep: 0, comments: [], history: [], outcome: 'Forecast confirmed.' },
 ];

@@ -77,6 +77,7 @@ export interface StepResult {
   checklistState: ChecklistItem[];
   filterValuesUsed: FilterPreset[]; 
   reportsSnapshot: Report[]; 
+  duration: number; // Time spent on this step in milliseconds
 }
 
 export interface Run {
@@ -93,4 +94,8 @@ export interface Run {
   completedSteps: number;
   comments: Comment[]; // Added for collaboration per execution
   outcome?: string; // Added for final business decision
+  
+  // Time Tracking
+  totalDuration: number; // Total time spent on completed steps (ms)
+  timeSpentOnCurrentStep: number; // Accumulated active time on current step (ms)
 }

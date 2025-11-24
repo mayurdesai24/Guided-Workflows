@@ -1,10 +1,12 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Run, Workflow, StepResult } from '../types';
-import { CheckCircle2, AlertOctagon, Search, Filter, Eye, Download, ArrowLeft, Calendar, User, ListFilter, CheckSquare, MessageSquareQuote, Flag, MessageSquare } from 'lucide-react';
+import { CheckCircle2, AlertOctagon, Search, Filter, Eye, Download, ArrowLeft, Calendar, User, ListFilter, CheckSquare, MessageSquareQuote, Flag, MessageSquare, Timer, Clock } from 'lucide-react';
 import { BiIcon } from '../components/BiIcon';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ChatPanel } from '../components/ChatPanel';
+import { formatDuration } from '../constants';
 
 interface HistoryProps {
   workflows: Workflow[];
@@ -100,9 +102,9 @@ export const History: React.FC<HistoryProps> = ({ workflows, runs }) => {
                 <p className="text-slate-900 font-medium">{endDate ? endDate.toLocaleString() : '-'}</p>
              </div>
              <div>
-                <p className="text-xs text-slate-400 uppercase font-semibold">Duration</p>
+                <p className="text-xs text-slate-400 uppercase font-semibold" title="Total time spent working on steps">Active Process Time</p>
                 <p className="text-slate-900 font-medium">
-                  {endDate ? Math.round((endDate.getTime() - startDate.getTime()) / 60000) + ' min' : 'In Progress'}
+                  {selectedRun.totalDuration ? formatDuration(selectedRun.totalDuration) : 'In Progress'}
                 </p>
              </div>
              <div>
@@ -153,6 +155,12 @@ export const History: React.FC<HistoryProps> = ({ workflows, runs }) => {
                        <div className="text-right text-sm text-slate-500">
                           <p>{new Date(step.completedAt).toLocaleString()}</p>
                           <p className="text-xs">by {step.completedBy}</p>
+                          {step.duration && (
+                            <p className="text-xs font-mono mt-1 text-slate-400 flex items-center justify-end gap-1">
+                               <Clock className="w-3 h-3" />
+                               {formatDuration(step.duration)}
+                            </p>
+                          )}
                        </div>
                     </div>
 
@@ -332,15 +340,13 @@ export const History: React.FC<HistoryProps> = ({ workflows, runs }) => {
                   <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Executed By</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Outcome</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Start Time</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Duration</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Active Time</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
                {filteredRuns.map((run) => {
                   const startDate = new Date(run.startTime);
-                  const endDate = run.endTime ? new Date(run.endTime) : new Date();
-                  const durationMinutes = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
 
                   return (
                     <tr key={run.id} className="hover:bg-slate-50 transition-colors group">
@@ -370,7 +376,7 @@ export const History: React.FC<HistoryProps> = ({ workflows, runs }) => {
                           )}
                        </td>
                        <td className="px-6 py-4 text-sm text-slate-600">{startDate.toLocaleDateString()} <span className="text-slate-400 text-xs">{startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></td>
-                       <td className="px-6 py-4 text-sm text-slate-600">{durationMinutes} min</td>
+                       <td className="px-6 py-4 text-sm text-slate-600 font-mono">{formatDuration(run.totalDuration || 0)}</td>
                        <td className="px-6 py-4 text-right">
                           <button 
                             onClick={() => setSelectedRun(run)}

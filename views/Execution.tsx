@@ -1,11 +1,12 @@
 
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CheckCircle2, Circle, ChevronRight, Info, FileText, CheckSquare, ArrowLeft, ExternalLink, Tag, Filter, RotateCcw, Lock, UserCheck, MessageSquare, Flag } from 'lucide-react';
+import { CheckCircle2, Circle, ChevronRight, Info, FileText, CheckSquare, ArrowLeft, ExternalLink, Tag, Filter, RotateCcw, Lock, UserCheck, MessageSquare, Flag, Timer } from 'lucide-react';
 import { Workflow, Run, Step } from '../types';
 import { BiIcon } from '../components/BiIcon';
 import { ChatPanel } from '../components/ChatPanel';
+import { formatDuration } from '../constants';
 
 interface ExecutionProps {
   workflows: Workflow[];
@@ -27,6 +28,11 @@ export const Execution: React.FC<ExecutionProps> = ({ workflows, runs, onUpdateR
   const [checklistState, setChecklistState] = useState<Record<string, boolean>>({});
   const [isChatOpen, setIsChatOpen] = useState(false);
   
+  // Timer State
+  const [sessionElapsed, setSessionElapsed] = useState(0);
+  const startTimeRef = useRef(Date.now());
+  const isCompletingRef = useRef(false);
+
   // Navigation State
   const [viewingStepCoords, setViewingStepCoords] = useState<{sectionIndex: number, stepIndex: number} | null>(null);
 
@@ -47,6 +53,17 @@ export const Execution: React.FC<ExecutionProps> = ({ workflows, runs, onUpdateR
 
   // Current User Mock
   const CURRENT_USER = "Alex Rivera";
+
+  // Setup Timer
+  useEffect(() => {
+    if (!isHistoryView && run) {
+       startTimeRef.current = Date.now();
+       const timer = setInterval(() => {
+         setSessionElapsed(Date.now() - startTimeRef.current);
+       }, 1000);
+       return () => clearInterval(timer);
+    }
+  }, [isHistoryView, run?.id]); // Restart timer if we switch steps or switch out of history view
 
   useEffect(() => {
     if (currentStep && !isHistoryView) {
@@ -72,8 +89,26 @@ export const Execution: React.FC<ExecutionProps> = ({ workflows, runs, onUpdateR
   const isNotesComplete = !currentStep.requiresNotes || notes.trim().length > 0;
   const canComplete = isChecklistComplete && isNotesComplete;
 
+  const handleBackToDashboard = () => {
+      // Save current progress before leaving
+      if (!isHistoryView && !isCompletingRef.current) {
+          const currentSessionTime = Date.now() - startTimeRef.current;
+          onUpdateRun({
+              ...run,
+              timeSpentOnCurrentStep: (run.timeSpentOnCurrentStep || 0) + currentSessionTime
+          });
+      }
+      navigate('/');
+  };
+
   const handleCompleteStep = () => {
     if (!canComplete || isHistoryView) return;
+    
+    isCompletingRef.current = true;
+    
+    // Calculate final time for this step
+    const currentSessionTime = Date.now() - startTimeRef.current;
+    const finalStepDuration = (run.timeSpentOnCurrentStep || 0) + currentSessionTime;
 
     const nextStepIndex = activeStepIndex + 1;
     let nextSectionIndex = activeSectionIndex;
@@ -94,6 +129,9 @@ export const Execution: React.FC<ExecutionProps> = ({ workflows, runs, onUpdateR
       status: isRunComplete ? 'Completed' : 'In Progress',
       endTime: isRunComplete ? new Date().toISOString() : undefined,
       outcome: isLastStep && outcome.trim() ? outcome : undefined, // Save outcome if last step
+      // Time tracking updates
+      totalDuration: (run.totalDuration || 0) + finalStepDuration,
+      timeSpentOnCurrentStep: 0, // Reset for next step
       history: [
         ...run.history,
         {
@@ -105,7 +143,8 @@ export const Execution: React.FC<ExecutionProps> = ({ workflows, runs, onUpdateR
           notes: notes,
           checklistState: currentStep.checklist.map(c => ({ ...c, checked: checklistState[c.id] })),
           filterValuesUsed: [...currentStep.filterPresets],
-          reportsSnapshot: [...currentStep.reports]
+          reportsSnapshot: [...currentStep.reports],
+          duration: finalStepDuration
         }
       ]
     };
@@ -114,6 +153,11 @@ export const Execution: React.FC<ExecutionProps> = ({ workflows, runs, onUpdateR
     
     if (isRunComplete) {
       navigate('/'); 
+    } else {
+       // Reset timer logic for next step
+       startTimeRef.current = Date.now();
+       setSessionElapsed(0);
+       isCompletingRef.current = false;
     }
   };
 
@@ -122,6 +166,20 @@ export const Execution: React.FC<ExecutionProps> = ({ workflows, runs, onUpdateR
     if (isFuture) return;
 
     const isActive = sIdx === activeSectionIndex && stIdx === activeStepIndex;
+    
+    // If navigating away from active step to history, save progress? 
+    // Usually purely visual navigation, but if we strictly track 'execution time', 
+    // we might want to pause the timer. 
+    // Current implementation: Pause timer when viewing history.
+    if (!isActive && !viewingStepCoords) {
+        // Leaving active step to view history
+        const currentSessionTime = Date.now() - startTimeRef.current;
+        onUpdateRun({
+            ...run,
+            timeSpentOnCurrentStep: (run.timeSpentOnCurrentStep || 0) + currentSessionTime
+        });
+    }
+
     setViewingStepCoords(isActive ? null : { sectionIndex: sIdx, stepIndex: stIdx });
   };
 
@@ -129,13 +187,16 @@ export const Execution: React.FC<ExecutionProps> = ({ workflows, runs, onUpdateR
   const completedBy = historyEntry?.completedBy;
   // Check if completer was one of the owners
   const isCompletedByOwner = completedBy && stepOwners.includes(completedBy);
+  
+  // Calculate display time
+  const currentTotalActiveTime = (run.timeSpentOnCurrentStep || 0) + sessionElapsed;
 
   return (
     <div className="flex h-full -m-8">
       {/* Left Sidebar */}
       <div className="w-80 bg-white border-r border-slate-200 flex flex-col h-full z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
         <div className="p-6 border-b border-slate-100">
-          <button onClick={() => navigate('/')} className="flex items-center text-slate-500 hover:text-indigo-600 text-sm mb-4 transition-colors font-medium">
+          <button onClick={handleBackToDashboard} className="flex items-center text-slate-500 hover:text-indigo-600 text-sm mb-4 transition-colors font-medium">
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Dashboard
           </button>
           <h2 className="text-lg font-bold text-slate-900 leading-tight">{workflow.name}</h2>
@@ -230,8 +291,16 @@ export const Execution: React.FC<ExecutionProps> = ({ workflows, runs, onUpdateR
           <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
              {isHistoryView && <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 transform rotate-45 translate-x-12 -translate-y-12 border border-slate-100"></div>}
              
-             {/* Chat Button Overlay */}
-             <div className="absolute top-8 right-8 z-20">
+             {/* Chat & Timer Button Overlay */}
+             <div className="absolute top-8 right-8 z-20 flex gap-3">
+                 {/* Live Timer for Active Steps */}
+                 {!isHistoryView && (
+                   <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 text-slate-700 rounded-lg border border-slate-200 shadow-sm text-sm font-mono font-medium">
+                      <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                      {formatDuration(currentTotalActiveTime)}
+                   </div>
+                 )}
+
                 <button 
                   onClick={() => setIsChatOpen(true)}
                   className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-bold border border-indigo-100 shadow-sm"
@@ -420,7 +489,14 @@ export const Execution: React.FC<ExecutionProps> = ({ workflows, runs, onUpdateR
              <div className="flex items-center justify-between pt-6 border-t border-slate-100">
                 {isHistoryView ? (
                    <div className="w-full flex items-center justify-between">
-                      <span className="text-sm text-slate-500 font-medium">Completed on {historyEntry ? new Date(historyEntry.completedAt).toLocaleString() : 'Unknown'}</span>
+                      <div className="flex items-center gap-6">
+                        <span className="text-sm text-slate-500 font-medium">Completed on {historyEntry ? new Date(historyEntry.completedAt).toLocaleString() : 'Unknown'}</span>
+                        {historyEntry?.duration && (
+                          <span className="text-sm text-slate-500 font-medium flex items-center gap-1">
+                             <Timer className="w-4 h-4" /> Duration: {formatDuration(historyEntry.duration)}
+                          </span>
+                        )}
+                      </div>
                       <span className="px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-100 text-sm font-bold rounded-lg flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4" /> Completed
                       </span>
